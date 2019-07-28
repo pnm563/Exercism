@@ -2,88 +2,56 @@ using System;
 
 public class Clock : IEquatable<Clock>
 {
-    private int _minutes;
-
-    private int _hours;
+    // Immutable Clock
+    private readonly int _minutes;
+    private readonly int _hours;
 
     public Clock(int hours, int minutes)
     {
-        // We can only add or subtract minutes, so convert hours and make a total
-        int totalMinutes = minutes + (hours * 60);
-
-        // This also takes care of -ve or +ve values passed in, end result will either be an Add or Subtract
-        if (totalMinutes > 0) Add(totalMinutes);
-        if (totalMinutes < 0) Subtract(Math.Abs(totalMinutes));
-
+        _hours = hours;
+        _minutes = minutes;
     }
 
     public int Hours
     {
-        // Uses MOD 24 to find the hour of the day for any given number of hours
         get
         {
-            // Take care of edge case, would otherwise give 22
-            if (_hours == 0)
-                return 0;
-            // The _hours + 1 offsets the mod correctly when going backwards
-            else if (_hours < 0)
-                return (23 - (Math.Abs(_hours + 1) % 24));
-            // Easier when going forwards
-            else
-                return (_hours % 24);
+            // Return all hours derived from number of minutes
+            int hoursRet = _minutes / 60;
+
+            // Total is hours derived from minutes plus hours already on the clock
+            hoursRet += _hours;
+
+            // Negative minutes remaining means we must roll back one more hour
+            if (_minutes % 60 < 0) hoursRet--;
+
+            // Display value for hours is somehwere between 0 and 23
+            if (hoursRet < 0) return 23 - (Math.Abs(hoursRet + 1) % 24);
+            else if (hoursRet > 0) return hoursRet % 24;
+            else return 0; // edge case, would be 22 otherwise
         }
     }
 
-    public int Minutes => _minutes;
+    public int Minutes
+
+    {
+        get
+        {
+            // Display value for minutes is somewhere between 0 and 60
+            int minutesRemaining = _minutes % 60;
+            return minutesRemaining >= 0 ? minutesRemaining : 60 + minutesRemaining;
+        }
+    }
+    
 
     public Clock Add(int minutesToAdd)
     {
-        if (minutesToAdd > 0)
-        {
-            // Add an hour for every 60 minutes
-            _hours += minutesToAdd / 60;
-
-            // The leftover minutes
-            int minutesRemaining = minutesToAdd % 60;
-
-            // This block handles remaining minutes causing the hour to rollover
-            if (_minutes + minutesRemaining >= 60)
-            {
-                _hours++;
-                _minutes += minutesRemaining - 60;
-            }
-            // Otherwise we can just add the minutes
-            else
-            {
-                _minutes += minutesRemaining;
-            }
-        }
-        return this;
+        return new Clock(_hours, _minutes + minutesToAdd);
     }
 
     public Clock Subtract(int minutesToSubtract)
     {
-        if (minutesToSubtract > 0)
-        {
-            // Subtract an hour for every 60 minutes
-            _hours -= minutesToSubtract / 60;
-
-            // The leftover minutes
-            int minutesRemaining = minutesToSubtract % 60;
-
-            // This block handles remaining minutes causing the hour to rollback
-            if (_minutes - minutesRemaining < 0)
-            {
-                _hours--;
-                _minutes =  60 - (minutesRemaining - _minutes);
-            }
-            // Otherwise just subtract the minutes
-            else
-            {
-                _minutes -= minutesRemaining;
-            }
-        }
-        return this;
+        return new Clock(_hours, _minutes - minutesToSubtract);
     }
 
     public override string ToString()
